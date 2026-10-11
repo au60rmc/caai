@@ -1,0 +1,21 @@
+fastapi
+uvicorn
+sqlalchemy
+psycopg2-binary
+psycopg[binary]
+pydantic
+pydantic[email]
+pydantic-settings
+python-dotenv
+python-jose[cryptography]
+bcrypt
+python-multipart
+openpyxl
+PyPDF2
+
+# Optional: full AI pipeline with OCR/TableFormer (self-hosted only).
+# Uncomment for desktop / server deployments that need scanned-image support.
+# docling
+argon2-cffi
+pyotp
+cryptography

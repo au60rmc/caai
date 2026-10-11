@@ -1,0 +1,17 @@
+fastapi
+uvicorn
+sqlalchemy
+psycopg2-binary
+psycopg[binary]
+pydantic
+pydantic[email]
+pydantic-settings
+python-dotenv
+python-jose[cryptography]
+bcrypt
+python-multipart
+openpyxl
+PyPDF2
+argon2-cffi
+pyotp
+cryptography

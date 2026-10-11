@@ -1,0 +1,7 @@
+# Full self-hosted requirements (includes Docling for scanned-image OCR).
+# Use this when deploying on desktop / VPS with >= 2 GB RAM.
+#
+#   pip install -r requirements-full.txt
+
+-r requirements.txt
+docling
