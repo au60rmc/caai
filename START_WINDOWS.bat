@@ -1,7 +1,7 @@
 @echo off
+title ImmBiz Books Launcher
 cd /d "%~dp0"
-call "%~dp0Run_ImmBiz_Books.bat"
-if errorlevel 1 (
-    echo.
-    pause
-)
+echo =====================================================================
+echo  Starting ImmBiz Books...
+echo =====================================================================
+cmd /k "%~dp0Run_ImmBiz_Books.bat"
