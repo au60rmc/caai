@@ -10,7 +10,7 @@ venv/
 ENV/
 build/
 develop-eggs/
-dist/
+!frontend-react/dist/
 downloads/
 eggs/
 .eggs/

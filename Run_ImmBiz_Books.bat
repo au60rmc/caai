@@ -81,9 +81,8 @@ if not exist "backend\.venv\Scripts\python.exe" (
         exit /b 1
     )
     echo [OK] Virtual environment created.
-    echo [*] Installing dependencies from backend\requirements.txt (first run only)...
-    "backend\.venv\Scripts\python.exe" -m pip install --upgrade pip
-    "backend\.venv\Scripts\pip.exe" install -r "backend\requirements.txt"
+    echo [*] Installing required packages from backend\requirements.txt (first run only)...
+    "backend\.venv\Scripts\pip.exe" install --no-warn-script-location -r "backend\requirements.txt"
     if !errorlevel! neq 0 (
         echo [ERROR] Failed to install dependencies.
         pause
