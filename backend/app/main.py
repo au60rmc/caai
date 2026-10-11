@@ -40,6 +40,7 @@ from app.routers import (
     api_v1,
     reports,
     subscription,
+    system_update,
 )
 
 # Attach the audit-trail flush listener (imports all audited models).
@@ -201,6 +202,7 @@ for r in (
     reports.router,
     subscription.router,
     subscription.v1_compat_router,
+    system_update.router,
 ):
     app.include_router(r)
 
