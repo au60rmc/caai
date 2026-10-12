@@ -29,6 +29,12 @@ export function useUpdateCheck() {
       const data = res.data as UpdateInfo;
       setInfo(data);
 
+      // If a new commit arrived that was not dismissed, ensure banner shows
+      const dismissedHash = sessionStorage.getItem("immbiz_update_dismissed_hash");
+      if (data?.update_available && data?.latest_hash && data.latest_hash !== dismissedHash) {
+        setDismissed(false);
+      }
+
       if (manual) {
         if (data?.update_available) {
           toast({
@@ -45,7 +51,7 @@ export function useUpdateCheck() {
         } else {
           toast({
             title: "Up to Date",
-            desc: `You are on the latest version (${data?.current_version || "v2.0.1"}).`,
+            desc: `You are on the latest version (${data?.current_version || "v2.0.2"}).`,
             tone: "info",
           });
         }
@@ -61,15 +67,33 @@ export function useUpdateCheck() {
 
   function dismiss() {
     setDismissed(true);
-    sessionStorage.setItem("immbiz_update_dismissed", "true");
+    if (info?.latest_hash) {
+      sessionStorage.setItem("immbiz_update_dismissed_hash", info.latest_hash);
+    }
   }
 
   useEffect(() => {
-    // Check quietly 2 seconds after app mounts
+    // Check quietly 1.5 seconds after app mounts
     const t = setTimeout(() => {
       check(false);
-    }, 2000);
-    return () => clearTimeout(t);
+    }, 1500);
+
+    // Periodically re-check every 30 seconds so pushed updates appear automatically without refresh
+    const interval = setInterval(() => {
+      check(false);
+    }, 30000);
+
+    // Automatically check when user switches back to this browser tab
+    function onFocus() {
+      check(false);
+    }
+    window.addEventListener("focus", onFocus);
+
+    return () => {
+      clearTimeout(t);
+      clearInterval(interval);
+      window.removeEventListener("focus", onFocus);
+    };
   }, []);
 
   return { info, checking, dismissed, check, dismiss };

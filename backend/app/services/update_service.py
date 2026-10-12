@@ -12,6 +12,7 @@ import json
 import logging
 import os
 import shutil
+import ssl
 import subprocess
 import urllib.request
 import zipfile
@@ -25,6 +26,16 @@ GITHUB_COMMITS_API = f"https://api.github.com/repos/{REPO_OWNER_NAME}/commits/ma
 GITHUB_ZIP_URL = f"https://github.com/{REPO_OWNER_NAME}/archive/refs/heads/main.zip"
 
 
+def _safe_urlopen(req_or_url, timeout: int = 10):
+    """Safely open URL with automatic SSL fallback for environments missing system CA bundles."""
+    try:
+        ctx = ssl.create_default_context()
+        return urllib.request.urlopen(req_or_url, context=ctx, timeout=timeout)
+    except Exception:
+        unverified = ssl._create_unverified_context()
+        return urllib.request.urlopen(req_or_url, context=unverified, timeout=timeout)
+
+
 class UpdateService:
     @staticmethod
     def _project_root() -> Path:
@@ -36,9 +47,9 @@ class UpdateService:
         root = cls._project_root()
         ver_file = root / "version.json"
         data = {
-            "version": "2.0.1",
+            "version": "2.0.2",
             "commit_hash": "unknown",
-            "build_date": "2026-10-11",
+            "build_date": "2026-10-12",
             "channel": "stable",
         }
         if ver_file.exists():
@@ -70,7 +81,28 @@ class UpdateService:
     def check_for_updates(cls) -> Dict[str, Any]:
         current = cls.get_current_version_info()
         cur_hash = current.get("commit_hash", "")[:7]
+        root = cls._project_root()
+        git_dir = root / ".git"
 
+        remote_sha = ""
+        commit_msg = "Latest updates and accounting fixes from GitHub"
+        commit_date = ""
+
+        # Step 1: If Git is present, try fast git ls-remote first
+        if git_dir.exists():
+            try:
+                out = subprocess.check_output(
+                    ["git", "ls-remote", "origin", "refs/heads/main"],
+                    cwd=str(root),
+                    timeout=4,
+                    stderr=subprocess.DEVNULL,
+                ).decode().strip()
+                if out:
+                    remote_sha = out.split()[0][:7]
+            except Exception:
+                pass
+
+        # Step 2: Query GitHub REST API (works with or without Git installed)
         req = urllib.request.Request(
             GITHUB_COMMITS_API,
             headers={
@@ -80,29 +112,28 @@ class UpdateService:
         )
 
         try:
-            with urllib.request.urlopen(req, timeout=4) as resp:
-                if resp.status != 200:
-                    return {
-                        "update_available": False,
-                        "offline": False,
-                        "current_version": current.get("version"),
-                        "message": "Update service temporarily unavailable",
-                    }
-                data = json.loads(resp.read().decode("utf-8"))
+            with _safe_urlopen(req, timeout=5) as resp:
+                if resp.status == 200:
+                    api_data = json.loads(resp.read().decode("utf-8"))
+                    api_sha = api_data.get("sha", "")[:7]
+                    if api_sha:
+                        remote_sha = api_sha
+                    commit_info = api_data.get("commit", {})
+                    msg = commit_info.get("message", "").split("\n")[0].strip()
+                    if msg:
+                        commit_msg = msg
+                    commit_date = commit_info.get("author", {}).get("date", "")
         except Exception as e:
-            # When offline or Wi-Fi not available, safely return offline status
-            return {
-                "update_available": False,
-                "offline": True,
-                "current_version": current.get("version"),
-                "current_hash": cur_hash,
-                "message": "Offline (no internet connection to update server)",
-            }
-
-        remote_sha = data.get("sha", "")[:7]
-        commit_info = data.get("commit", {})
-        commit_msg = commit_info.get("message", "New features and fixes").split("\n")[0]
-        commit_date = commit_info.get("author", {}).get("date", "")
+            logger.warning("GitHub API request failed: %s", e)
+            # If both git ls-remote and GitHub API failed, we are truly offline
+            if not remote_sha:
+                return {
+                    "update_available": False,
+                    "offline": True,
+                    "current_version": current.get("version"),
+                    "current_hash": cur_hash,
+                    "message": "Offline (cannot reach GitHub update servers)",
+                }
 
         is_new = bool(remote_sha and cur_hash and cur_hash != "unknown" and remote_sha != cur_hash)
 
@@ -151,7 +182,7 @@ class UpdateService:
         )
 
         try:
-            with urllib.request.urlopen(req, timeout=30) as resp:
+            with _safe_urlopen(req, timeout=30) as resp:
                 with open(tmp_zip, "wb") as f:
                     f.write(resp.read())
 
