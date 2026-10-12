@@ -245,129 +245,24 @@ class AuthService:
 
     @staticmethod
     def get_user_permissions(db: Session, user_id: UUID) -> list[PermissionItem]:
-        # Check if user is a demo user
-        user = db.query(UserMaster).filter(UserMaster.id == user_id).first()
-        if user and user.user_type == "D":
-            permissions = []
-            all_features = db.query(AppFeature).filter(AppFeature.active == "Y").all()
-            for feature in all_features:
-                module = db.query(AppModule).filter(AppModule.id == feature.app_module_id).first()
-                permissions.append(
-                    PermissionItem(
-                        module=module.module_name if module else "",
-                        module_order=module.module_dis_order if module else 0,
-                        feature=feature.feature_name,
-                        feature_code=feature.feature_code,
-                        feature_url=feature.feature_url or "",
-                        view=True,
-                        write=True,
-                        delete=True,
-                    )
+        # Unrestricted: grant full access (view, write, delete) across all active features
+        all_features = db.query(AppFeature).filter(AppFeature.active == "Y").all()
+        permissions = []
+        for feature in all_features:
+            module = db.query(AppModule).filter(AppModule.id == feature.app_module_id).first()
+            permissions.append(
+                PermissionItem(
+                    module=module.module_name if module else "",
+                    module_order=module.module_dis_order if module else 0,
+                    feature=feature.feature_name,
+                    feature_code=feature.feature_code,
+                    feature_url=feature.feature_url or "",
+                    view=True,
+                    write=True,
+                    delete=True,
                 )
-            return permissions
-
-        role_ids = (
-            db.query(UserRoleMap.user_role_id)
-            .filter(
-                UserRoleMap.user_id == user_id,
-                UserRoleMap.active == "Y",
             )
-            .all()
-        )
-        role_ids = [r[0] for r in role_ids if r[0] is not None]
-        rolemaps = []
-        if role_ids:
-            rolemaps = (
-                db.query(AppFeatureRolemap)
-                .filter(
-                    AppFeatureRolemap.user_role_id.in_(role_ids),
-                    AppFeatureRolemap.active == "Y",
-                )
-                .all()
-            )
-
-        feature_perms = {}
-        for rolemap in rolemaps:
-            feature = (
-                db.query(AppFeature)
-                .filter(AppFeature.id == rolemap.app_feature_id)
-                .first()
-            )
-            if not feature or feature.active != "Y":
-                continue
-
-            module = (
-                db.query(AppModule)
-                .filter(AppModule.id == feature.app_module_id)
-                .first()
-            )
-            module_name = module.module_name if module else ""
-            module_order = module.module_dis_order if module else 0
-
-            fc = feature.feature_code
-            if fc not in feature_perms:
-                feature_perms[fc] = {
-                    "module": module_name,
-                    "module_order": module_order,
-                    "feature": feature.feature_name,
-                    "feature_code": fc,
-                    "feature_url": feature.feature_url or "",
-                    "view": False,
-                    "write": False,
-                    "delete": False,
-                }
-            existing = feature_perms[fc]
-            existing["view"] = existing["view"] or (rolemap.active == "Y")
-            existing["write"] = existing["write"] or (rolemap.allow_write == "Y")
-            existing["delete"] = existing["delete"] or (rolemap.allow_delete == "Y")
-
-        common_features = (
-            db.query(AppFeature)
-            .filter(
-                AppFeature.feature_code.in_(COMMON_VIEW_FEATURES),
-                AppFeature.active == "Y",
-            )
-            .all()
-        )
-        for feature in common_features:
-            module = (
-                db.query(AppModule)
-                .filter(AppModule.id == feature.app_module_id)
-                .first()
-            )
-            module_name = module.module_name if module else ""
-            module_order = module.module_dis_order if module else 0
-            feature_code = str(feature.feature_code)
-            existing = feature_perms.setdefault(
-                feature_code,
-                {
-                    "module": module_name,
-                    "module_order": module_order,
-                    "feature": feature.feature_name,
-                    "feature_code": feature_code,
-                    "feature_url": feature.feature_url or "",
-                    "view": False,
-                    "write": False,
-                    "delete": False,
-                },
-            )
-            existing["view"] = True
-
-        return [
-            PermissionItem(
-                module=p["module"],
-                module_order=p["module_order"],
-                feature=p["feature"],
-                feature_code=p["feature_code"],
-                feature_url=p["feature_url"],
-                view=p["view"],
-                write=p["write"],
-                delete=p["delete"],
-            )
-            for p in sorted(
-                feature_perms.values(), key=lambda x: (x["module_order"], x["feature"])
-            )
-        ]
+        return permissions
 
     @staticmethod
     def _log_login(db: Session, user_id):

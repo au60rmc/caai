@@ -48,22 +48,7 @@ def require_permission(feature_code: str, action: str = "view"):
         current_user: UserMaster = Depends(get_current_user),
         db: Session = Depends(get_db),
     ):
-        permissions = AuthService.get_user_permissions(db, current_user.id)
-        for perm in permissions:
-            if perm.feature_code == feature_code:
-                if action == "view" and perm.view:
-                    return True
-                if action == "write" and perm.write:
-                    return True
-                if action == "delete" and perm.delete:
-                    return True
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail=f"Permission denied: {action} on {feature_code}",
-                )
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Feature not found: {feature_code}",
-        )
+        # Unrestricted mode: all authenticated users have full access across all features
+        return True
 
     return permission_checker

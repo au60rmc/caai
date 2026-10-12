@@ -76,7 +76,7 @@ if "!choice!"=="1" (
 )
 if "!choice!"=="2" (
     start https://www.python.org/downloads/
-    echo Please install Python (make sure to check "Add python.exe to PATH") and run this file again.
+    echo Please install Python - make sure to check Add python.exe to PATH - and run this file again.
     pause
     goto :check_python
 )
@@ -98,12 +98,12 @@ if exist "backend\.venv" (
 )
 
 if not exist "backend\.venv\Scripts\python.exe" (
-    echo [*] Creating virtual environment (first run only)...
-    "!PY_CMD!" -m venv "backend\.venv"
+    echo [*] Creating virtual environment - first run only, please wait...
+    !PY_CMD! -m venv "backend\.venv"
 )
 
 if exist "backend\.venv\Scripts\python.exe" (
-    set "RUN_PY=backend\.venv\Scripts\python.exe"
+    set "RUN_PY=%~dp0backend\.venv\Scripts\python.exe"
 ) else (
     echo [WARN] Virtual environment could not be created. Using system Python directly.
     set "RUN_PY=!PY_CMD!"
@@ -113,7 +113,7 @@ if exist "backend\.venv\Scripts\python.exe" (
 echo [*] Checking dependencies...
 "!RUN_PY!" -c "import fastapi, uvicorn, sqlalchemy" >nul 2>&1
 if errorlevel 1 (
-    echo [*] Installing required packages (first run only, please wait)...
+    echo [*] Installing required packages - first run only, please wait...
     "!RUN_PY!" -m pip install --no-warn-script-location -r "backend\requirements.txt"
 )
 echo [OK] Dependencies ready.
@@ -145,7 +145,7 @@ echo =====================================================================
 echo.
 echo   ADMIN LOGIN CREDENTIALS:
 echo     * Username : admin   (or admin@immbiz.local)
-echo     * Password : ImmBizAdmin2026!
+echo     * Password : Admin@123  (or ImmBizAdmin2026!)
 echo.
 echo   Alternative Admin:
 echo     * Username : Nirmal

@@ -52,43 +52,7 @@ class EntitlementService:
     # ------------------------------------------------------------------
     @staticmethod
     def is_demo_or_trial(db: Session, user: Optional[Any] = None) -> bool:
-        """Determines if the active session is under Demo or Trial tier."""
-        if user is not None:
-            user_type = getattr(user, "user_type", None)
-            email = str(getattr(user, "user_email", "") or "").lower()
-            user_name = str(getattr(user, "user_name", "") or "").lower()
-
-            # Non-demo live accounts have NO restrictions
-            if user_type == "S" and "demo" not in email and "demo" not in user_name:
-                return False
-
-            if user_type == "D" or "demo" in email or "demo" in user_name:
-                return True
-
-        # Check if the connection is bound to demo schema
-        try:
-            bind = db.get_bind()
-            if bind:
-                opts = getattr(bind, "_execution_options", {}) or {}
-                if opts.get("schema_translate_map", {}).get("master") == "demo":
-                    return True
-        except Exception:
-            pass
-
-        # Check if user has an active/expired trial subscription
-        if user is not None and getattr(user, "id", None):
-            customer = db.query(LicenceCustomer).filter(
-                LicenceCustomer.contact_email == getattr(user, "user_email", "")
-            ).first()
-            if customer:
-                sub = db.query(Subscription).filter(
-                    Subscription.customer_id == customer.id
-                ).order_by(Subscription.created_date.desc()).first()
-                if sub:
-                    plan = db.query(SubscriptionPlan).filter(SubscriptionPlan.id == sub.plan_id).first()
-                    if plan and plan.plan_code == "TRIAL":
-                        return True
-
+        """Unrestricted mode: Demo and Trial limitations are permanently disabled."""
         return False
 
     @staticmethod
@@ -333,86 +297,24 @@ class EntitlementService:
         user: Optional[Any] = None,
         company_id: Optional[UUID] = None,
     ) -> None:
-        """Enforces limits on posting vouchers.
-
-        Under Trial:
-        - Maximum 1,000 posted vouchers
-        - 30-day duration limit
-        - After expiry: posting stops, view, backup and export remain allowed.
-        """
-        if EntitlementService.is_demo_or_trial(db, user):
-            trial_status = EntitlementService.get_trial_status(db, user, company_id)
-            if trial_status["is_expired"]:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail=(
-                        "Trial period of 30 days has expired. Posting new or draft vouchers is disabled. "
-                        "You can still view, back up, and export your existing data. "
-                        "Please upgrade to Solo, Team, or Corporate to continue posting vouchers."
-                    ),
-                )
-            if trial_status["posted_vouchers_count"] >= TRIAL_MAX_VOUCHERS:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail=(
-                        f"Trial limit reached: Maximum {TRIAL_MAX_VOUCHERS:,} posted vouchers allowed under the Trial plan. "
-                        "You can still view, back up, and export your existing data. "
-                        "Please upgrade to Solo or higher to continue posting vouchers."
-                    ),
-                )
+        """Unrestricted: voucher posting is always permitted."""
+        return
 
     @staticmethod
     def assert_company_creation_allowed(
         db: Session,
         user: Optional[Any] = None,
     ) -> None:
-        """Enforces company creation limits (1 company for Trial)."""
-        if EntitlementService.is_demo_or_trial(db, user):
-            trial_status = EntitlementService.get_trial_status(db, user)
-            if trial_status["is_expired"]:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail=(
-                        "Trial period of 30 days has expired. Creating companies is disabled. "
-                        "You can still view, back up, and export your data. "
-                        "Please upgrade your subscription to continue."
-                    ),
-                )
-            if trial_status["companies_count"] >= TRIAL_MAX_COMPANIES:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail=(
-                        f"Trial limit reached: The Trial plan is limited to {TRIAL_MAX_COMPANIES} company. "
-                        "You can still view, back up, and export your data. "
-                        "Please upgrade to Multi Company (up to 5), Team (up to 10), or Corporate (up to 50) to add more companies."
-                    ),
-                )
+        """Unrestricted: company creation is always permitted."""
+        return
 
     @staticmethod
     def assert_user_creation_allowed(
         db: Session,
         user: Optional[Any] = None,
     ) -> None:
-        """Enforces user seat limits (1 named user for Trial)."""
-        if EntitlementService.is_demo_or_trial(db, user):
-            trial_status = EntitlementService.get_trial_status(db, user)
-            if trial_status["is_expired"]:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail=(
-                        "Trial period of 30 days has expired. Adding users is disabled. "
-                        "You can still view, back up, and export your data. "
-                        "Please upgrade your subscription to continue."
-                    ),
-                )
-            if trial_status["users_count"] >= TRIAL_MAX_USERS:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail=(
-                        f"Trial limit reached: The Trial plan is limited to {TRIAL_MAX_USERS} named user. "
-                        "Please upgrade to Team (10 users) or Corporate (25 users) to invite and manage additional team members."
-                    ),
-                )
+        """Unrestricted: user creation is always permitted."""
+        return
 
     @staticmethod
     def assert_ai_document_processing_allowed(
@@ -420,27 +322,8 @@ class EntitlementService:
         user: Optional[Any] = None,
         pages: int = 1,
     ) -> None:
-        """Enforces AI document-processing limits (50 pages for Trial)."""
-        if EntitlementService.is_demo_or_trial(db, user):
-            trial_status = EntitlementService.get_trial_status(db, user)
-            if trial_status["is_expired"]:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail=(
-                        "Trial period of 30 days has expired. AI document-processing is disabled. "
-                        "You can still view, back up, and export your data. "
-                        "Please upgrade your subscription to continue processing documents."
-                    ),
-                )
-            if trial_status["ai_pages_count"] + pages > TRIAL_MAX_AI_PAGES:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail=(
-                        f"Trial limit reached: Maximum {TRIAL_MAX_AI_PAGES} AI document-processing pages allowed under the Trial plan. "
-                        f"Current usage: {trial_status['ai_pages_count']} pages used. "
-                        "Please upgrade to Solo, Multi Company, Team, or Corporate for higher document-processing quotas."
-                    ),
-                )
+        """Unrestricted: AI document processing is always permitted."""
+        return
 
     # ------------------------------------------------------------------
     # Legacy Lease / Entitlement methods for backwards compatibility
@@ -492,50 +375,31 @@ class EntitlementService:
 
     @staticmethod
     def verify_read_access(db: Session, licence_id: str, installation_id: str):
-        """Read, Report, and Export actions are always allowed if a licence exists,
-        even if expired (Non-negotiable requirement 1.1.2)."""
+        """Unrestricted: read actions are always allowed."""
         pass
 
     @staticmethod
     def verify_write_access(db: Session, licence_id: str, installation_id: str):
-        """Data entry/posting is blocked if the lease grace period has expired."""
-        lease = EntitlementService._get_active_lease(db, licence_id, installation_id)
-        if not lease:
-            msg = get_status_message("LIC-READONLY")
-            raise HTTPException(status_code=403, detail=msg["internal_msg"])
-            
-        now = datetime.now(timezone.utc)
-        if now > lease.grace_end.replace(tzinfo=timezone.utc):
-            msg = get_status_message("LIC-READONLY")
-            raise HTTPException(status_code=403, detail=msg["internal_msg"])
+        """Unrestricted: write actions are always allowed."""
+        pass
 
     @staticmethod
     def verify_company_creation(db: Session, licence_id: str, current_company_count: int):
-        limits = EntitlementService._get_entitlements(db, licence_id)
-        if limits["max_companies"] > 0 and current_company_count >= limits["max_companies"]:
-            raise HTTPException(
-                status_code=403, 
-                detail=f"Plan limit reached: Maximum {limits['max_companies']} companies allowed."
-            )
+        """Unrestricted: company creation is always allowed."""
+        pass
 
     @staticmethod
     def verify_user_creation(db: Session, licence_id: str, current_user_count: int):
-        limits = EntitlementService._get_entitlements(db, licence_id)
-        if limits["max_named_users"] > 0 and current_user_count >= limits["max_named_users"]:
-            msg = get_status_message("ENT-USERS")
-            raise HTTPException(status_code=403, detail=msg["internal_msg"])
+        """Unrestricted: user creation is always allowed."""
+        pass
 
     @staticmethod
     def verify_session_creation(db: Session, licence_id: str, current_session_count: int):
-        limits = EntitlementService._get_entitlements(db, licence_id)
-        if limits["max_concurrent_sessions"] > 0 and current_session_count >= limits["max_concurrent_sessions"]:
-            msg = get_status_message("ENT-CONCURRENCY")
-            raise HTTPException(status_code=403, detail=msg["internal_msg"])
-            
+        """Unrestricted: session creation is always allowed."""
+        pass
+
     @staticmethod
     def verify_transaction(db: Session, licence_id: str, current_tx_count: int):
-        limits = EntitlementService._get_entitlements(db, licence_id)
-        if limits["transaction_limit"] > 0 and current_tx_count >= limits["transaction_limit"]:
-            msg = get_status_message("ENT-TRANSACTION")
-            raise HTTPException(status_code=403, detail=msg["internal_msg"])
+        """Unrestricted: transactions are always allowed."""
+        pass
 

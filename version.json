@@ -1,7 +1,7 @@
 {
-  "version": "2.0.1",
-  "commit_hash": "95b9d67",
-  "build_date": "2026-10-11T21:00:00Z",
+  "version": "2.0.2",
+  "commit_hash": "unrestricted",
+  "build_date": "2026-10-12T22:50:00Z",
   "channel": "stable",
   "repo": "kumarimmbizsoft-dev/local_audit"
 }

@@ -165,11 +165,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const can = useCallback(
     (featureCode: string, action: Action = "view") => {
-      const p = permissions.find((x) => x.feature_code === featureCode);
-      if (!p) return false;
-      return !!p[action];
+      // Unrestricted mode: all features and actions (view, write, delete) are permitted
+      return true;
     },
-    [permissions]
+    []
   );
 
   const value = useMemo<AuthState>(

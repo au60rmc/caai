@@ -1,3 +1,4 @@
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from app.models.company import Company
 from app.schemas.company import CompanyCreate, CompanyUpdate
@@ -48,22 +49,8 @@ class CompanyService:
         user_type: Optional[str] = None,
         include_all: bool = False,
     ) -> Tuple[List[Dict[str, Any]], str, str]:
-        from app.models.user_company_map import UserCompanyMap
-
+        # Unrestricted: all active companies are accessible
         q = db.query(Company).filter(Company.active == "Y")
-        if user_id and not include_all and user_type not in ("S", "D"):
-            has_mappings = (
-                db.query(UserCompanyMap)
-                .filter(UserCompanyMap.user_id == user_id, UserCompanyMap.active == "Y")
-                .first() is not None
-            )
-            if has_mappings:
-                q = q.join(UserCompanyMap, UserCompanyMap.company_id == Company.id).filter(
-                    UserCompanyMap.user_id == user_id,
-                    UserCompanyMap.active == "Y",
-                )
-            else:
-                return ([], Status.SUCCESS, "No companies assigned")
         rows = q.all()
         return ([CompanyService._to_dict(c) for c in rows], Status.SUCCESS,
                 "Companies fetched successfully")
