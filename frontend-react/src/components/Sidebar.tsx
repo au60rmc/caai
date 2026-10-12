@@ -19,6 +19,7 @@ import {
   Users,
   UserRound,
   Puzzle,
+  HelpCircle,
   ChevronsLeft,
   ChevronsRight,
   Wallet,
@@ -100,6 +101,7 @@ const NAV: Group[] = [
       { to: "/app/subscription", label: "Subscription & Plans", icon: CreditCard },
       { to: "/app/lov", label: "List of Values", icon: List, perm: "LOV" },
       { to: "/app/custom-fields", label: "Custom Fields", icon: Puzzle, perm: "CUSTOM_FIELD" },
+      { to: "/app/help", label: "Help & Updates", icon: HelpCircle },
     ],
   },
 ];

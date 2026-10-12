@@ -37,6 +37,7 @@ const SubscriptionDashboard = lazy(() => import("./pages/SubscriptionDashboard")
 const LicenceManagement = lazy(() => import("./pages/LicenceManagement"));
 const BackupManagement = lazy(() => import("./pages/BackupManagement"));
 const AuditTrail = lazy(() => import("./pages/AuditTrail"));
+const Help = lazy(() => import("./pages/Help").then(({ Help }) => ({ default: Help })));
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const { isAuthenticated, mustChangePassword } = useAuth();
@@ -98,6 +99,7 @@ function AppRoutes() {
         <Route path="settings" element={<SystemSettings />} />
         <Route path="lov" element={<Lov />} />
         <Route path="custom-fields" element={<CustomFields />} />
+        <Route path="help" element={<Help />} />
         <Route path="subscription" element={<SubscriptionDashboard />} />
         <Route path="licences" element={<LicenceManagement />} />
         <Route path="backups" element={<BackupManagement />} />
