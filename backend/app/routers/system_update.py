@@ -7,16 +7,19 @@ from app.services.update_service import UpdateService
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/system", tags=["System Update"])
+router = APIRouter(prefix="/api/system", tags=["System Update"])
+compat_router = APIRouter(prefix="/system", tags=["System Update (Compat)"])
 
 
 @router.get("/version")
+@compat_router.get("/version")
 def get_version() -> Dict[str, Any]:
     """Get current running version and commit metadata."""
     return UpdateService.get_current_version_info()
 
 
 @router.get("/check-update")
+@compat_router.get("/check-update")
 def check_update() -> Dict[str, Any]:
     """Check GitHub repository for newly published updates."""
     try:
@@ -31,6 +34,7 @@ def check_update() -> Dict[str, Any]:
 
 
 @router.post("/apply-update")
+@compat_router.post("/apply-update")
 def apply_update() -> Dict[str, Any]:
     """Download and apply latest update from GitHub while preserving database."""
     try:
@@ -41,3 +45,4 @@ def apply_update() -> Dict[str, Any]:
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Could not apply update: {str(e)}",
         )
+

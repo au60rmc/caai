@@ -203,6 +203,7 @@ for r in (
     subscription.router,
     subscription.v1_compat_router,
     system_update.router,
+    system_update.compat_router,
 ):
     app.include_router(r)
 
