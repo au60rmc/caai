@@ -248,7 +248,7 @@ export function Landing() {
               <h1 className="mt-5 text-[40px] lg:text-[52px] leading-[1.08] font-semibold tracking-tight" style={{ color: INK }}>
                 Accounting that keeps
                 <br />
-                <span className="fig italic" style={{ color: TEAL }}>every rupee</span> accounted.
+                <span className="fig italic" style={{ color: TEAL }}>every rupee (₹)</span> accounted.
               </h1>
               <p className="text-[16.5px] text-muted-foreground mt-5 max-w-xl leading-relaxed">
                 Streamline your finances, automate GST filing, and grow your business with
