@@ -153,8 +153,8 @@ echo     * Password : Admin@123
 echo =====================================================================
 echo.
 
-:: Automatically open default browser after 3 seconds
-start "" powershell -NoProfile -Command "Start-Sleep -Seconds 3; Start-Process 'http://localhost:8000'" >nul 2>&1
+:: Automatically open in standalone full-screen desktop window (no browser tabs, no address bar)
+start "" powershell -NoProfile -Command "Start-Sleep -Seconds 3; $edgePaths = @('msedge', (Join-Path ${env:ProgramFiles(x86)} 'Microsoft\Edge\Application\msedge.exe'), (Join-Path $env:ProgramFiles 'Microsoft\Edge\Application\msedge.exe')); $chromePaths = @('chrome', (Join-Path $env:ProgramFiles 'Google\Chrome\Application\chrome.exe'), (Join-Path ${env:ProgramFiles(x86)} 'Google\Chrome\Application\chrome.exe'), (Join-Path $env:LocalAppData 'Google\Chrome\Application\chrome.exe')); $exe = $edgePaths + $chromePaths | Where-Object { (Test-Path $_ -PathType Leaf 2>$null) -or (Get-Command $_ -ErrorAction SilentlyContinue) } | Select-Object -First 1; if ($exe) { Start-Process $exe -ArgumentList '--app=http://localhost:8000', '--start-maximized' } else { Start-Process 'http://localhost:8000' }" >nul 2>&1
 
 set "DATABASE_URL=sqlite:///./immbiz.db"
 set "BACKEND_HOST=127.0.0.1"

@@ -43,11 +43,19 @@ cleanup() {
 }
 trap cleanup INT TERM EXIT
 
-# Wait a moment for servers to spin up, then open browser automatically
+# Wait a moment for servers to spin up, then open in standalone desktop window
 (
   sleep 2
-  echo "Opening browser at http://localhost:4300..."
-  open "http://localhost:4300"
+  echo "Opening ImmBiz Books in standalone desktop window..."
+  if [ -d "/Applications/Google Chrome.app" ]; then
+    open -na "Google Chrome" --args --app="http://localhost:4300" --start-maximized
+  elif [ -d "/Applications/Microsoft Edge.app" ]; then
+    open -na "Microsoft Edge" --args --app="http://localhost:4300" --start-maximized
+  elif [ -d "/Applications/Brave Browser.app" ]; then
+    open -na "Brave Browser" --args --app="http://localhost:4300" --start-maximized
+  else
+    open "http://localhost:4300"
+  fi
 ) &
 
 echo "=================================================="
