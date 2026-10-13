@@ -20,10 +20,10 @@ def get_version() -> Dict[str, Any]:
 
 @router.get("/check-update")
 @compat_router.get("/check-update")
-def check_update() -> Dict[str, Any]:
+def check_update(force: bool = False) -> Dict[str, Any]:
     """Check GitHub repository for newly published updates."""
     try:
-        return UpdateService.check_for_updates()
+        return UpdateService.check_for_updates(force=force)
     except Exception as e:
         logger.warning("Error checking for updates: %s", e)
         return {

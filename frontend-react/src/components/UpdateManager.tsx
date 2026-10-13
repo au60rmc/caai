@@ -25,7 +25,7 @@ export function useUpdateCheck() {
     if (checking) return;
     setChecking(true);
     try {
-      const res = await api.get("/system/check-update");
+      const res = await api.get(manual ? "/system/check-update?force=true" : "/system/check-update");
       const data = res.data as UpdateInfo;
       setInfo(data);
 
@@ -78,10 +78,10 @@ export function useUpdateCheck() {
       check(false);
     }, 1500);
 
-    // Periodically re-check every 30 seconds so pushed updates appear automatically without refresh
+    // Periodically re-check every 120 seconds so pushed updates appear automatically without refresh
     const interval = setInterval(() => {
       check(false);
-    }, 30000);
+    }, 120000);
 
     // Automatically check when user switches back to this browser tab
     function onFocus() {
